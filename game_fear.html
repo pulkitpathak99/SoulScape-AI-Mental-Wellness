@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journey Through Fear</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a2e;
+            color: #ffffff;
+        }
+
+        #start-screen, #end-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+        }
+
+        #start-button, #restart-button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #start-button:hover, #restart-button:hover {
+            background-color: #45a049;
+        }
+
+        #game-info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        #instruction {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.7);
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-screen">
+        <h1>Journey Through Fear</h1>
+        <p>Use your mouse to transform the shadows of fear</p>
+        <p>Navigate from darkness to light</p>
+        <button id="start-button">Begin Your Journey</button>
+    </div>
+
+    <div id="end-screen" style="display:none;">
+        <h1>Journey Completed</h1>
+        <p>You've transformed your fears into light</p>
+        <p id="final-courage-text"></p>
+        <button id="restart-button">Start Again</button>
+    </div>
+
+    <div id="game-info" style="display:none;">
+        Courage Level: <span id="courage-meter">0</span> | 
+        Remaining Shadows: <span id="shadow-count">10</span>
+    </div>
+    <div id="instruction" style="display:none;">Move your mouse to transform the shadows of fear</div>
+
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            parent: 'phaser-example',
+            backgroundColor: '#1a1a2e',
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+        let fearShadows = [];
+        let player, courageText, shadowCountText;
+        let courageLevel = 0;
+        let mouseX = 0, mouseY = 0;
+        let gameStarted = false;
+        let gameEnded = false;
+
+        // Start screen setup
+        document.getElementById('start-button').addEventListener('click', () => {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('game-info').style.display = 'block';
+            document.getElementById('instruction').style.display = 'block';
+            gameStarted = true;
+        });
+
+        // End screen setup
+        document.getElementById('restart-button').addEventListener('click', () => {
+            location.reload();
+        });
+
+        function preload() {
+            this.load.image('fear-shadow', 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f47b.png');
+            this.load.image('light', 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/2728.png');
+        }
+
+        function create() {
+            const scene = this;
+            const centerX = this.cameras.main.centerX;
+            const centerY = this.cameras.main.centerY;
+
+            // Create initial fear shadows
+            for (let i = 0; i < 10; i++) {
+                createFearShadow(scene);
+            }
+
+            // Player (light source)
+            player = this.add.image(centerX, centerY, 'light').setScale(0.5);
+            player.setAlpha(0.7);
+
+            // Courage meter text
+            courageText = document.getElementById('courage-meter');
+            shadowCountText = document.getElementById('shadow-count');
+
+            // Mouse movement tracking
+            this.input.on('pointermove', (pointer) => {
+                mouseX = pointer.x;
+                mouseY = pointer.y;
+            });
+        }
+
+        function createFearShadow(scene) {
+            const x = Phaser.Math.Between(0, scene.game.config.width);
+            const y = Phaser.Math.Between(0, scene.game.config.height);
+            
+            const shadow = scene.add.image(x, y, 'fear-shadow')
+                .setScale(Phaser.Math.FloatBetween(0.2, 1))
+                .setAlpha(Phaser.Math.FloatBetween(0.3, 0.8));
+            
+            // Random movement pattern
+            shadow.originalX = x;
+            shadow.originalY = y;
+            shadow.movementSpeed = Phaser.Math.FloatBetween(0.5, 2);
+            
+            fearShadows.push(shadow);
+            return shadow;
+        }
+
+        function update() {
+            if (!gameStarted || gameEnded) return;
+
+            // Update fear shadows
+            fearShadows.forEach((shadow, index) => {
+                // Subtle floating movement
+                shadow.x = shadow.originalX + Math.sin(this.time.now * 0.001 * shadow.movementSpeed) * 50;
+                shadow.y = shadow.originalY + Math.cos(this.time.now * 0.001 * shadow.movementSpeed) * 50;
+
+                // Distance from player (light source)
+                const distance = Phaser.Math.Distance.Between(mouseX, mouseY, shadow.x, shadow.y);
+
+                // Transform shadows when close to light
+                if (distance < 200) {
+                    // Shrink and fade out
+                    const scale = Phaser.Math.Linear(shadow.scale, 0.1, 0.05);
+                    const alpha = Phaser.Math.Linear(shadow.alpha, 0, 0.05);
+                    
+                    shadow.setScale(scale);
+                    shadow.setAlpha(alpha);
+
+                    // Increase courage
+                    if (courageLevel < 100) {
+                        courageLevel += 0.5;
+                        courageText.textContent = Math.floor(courageLevel);
+                    }
+
+                    // Replace transformed shadows
+                    if (scale < 0.2) {
+                        shadow.destroy();
+                        fearShadows.splice(index, 1);
+                        createFearShadow(this);
+                    }
+                } else {
+                    // Gradually return to original state
+                    shadow.setScale(Phaser.Math.Linear(shadow.scale, 1, 0.01));
+                    shadow.setAlpha(Phaser.Math.Linear(shadow.alpha, 0.6, 0.01));
+                }
+
+                // Update shadow count
+                shadowCountText.textContent = fearShadows.length;
+            });
+
+            // Check for game completion
+            if (fearShadows.length <= 3) {
+                endGame();
+            }
+
+            // Update player position to mouse
+            player.x = mouseX;
+            player.y = mouseY;
+        }
+
+        function endGame() {
+            gameEnded = true;
+            document.getElementById('game-info').style.display = 'none';
+            document.getElementById('instruction').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'flex';
+            
+            const finalCourageText = document.getElementById('final-courage-text');
+            finalCourageText.textContent = `You've built up ${Math.floor(courageLevel)} units of courage!`;
+        }
+    </script>
+</body>
+</html>

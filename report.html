@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js"></script>
+</head>
+<body>
+    <h1>User Reports</h1>
+
+    <!-- Form to Submit Reports -->
+    <form id="report-form">
+        <input type="text" id="username" placeholder="Your Name" required>
+        <textarea id="message" placeholder="Your Message" required></textarea>
+        <button type="submit">Submit Report</button>
+    </form>
+
+    <!-- Display Reports -->
+    <h2>All Reports</h2>
+    <ul id="reports-list"></ul>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Submit Form and Save Data to Firestore
+        document.getElementById("report-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const message = document.getElementById("message").value;
+
+            await db.collection("user_reports").add({
+                username: username,
+                message: message,
+                timestamp: new Date()
+            });
+
+            alert("Report Submitted!");
+            fetchReports();
+        });
+
+        // Fetch and Display All Reports
+        async function fetchReports() {
+            const reportsList = document.getElementById("reports-list");
+            reportsList.innerHTML = "";
+
+            const querySnapshot = await db.collection("user_reports").orderBy("timestamp", "desc").get();
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const listItem = `<li><strong>${data.username}</strong>: ${data.message} <em>(${data.timestamp?.toDate().toLocaleString()})</em></li>`;
+                reportsList.innerHTML += listItem;
+            });
+        }
+
+        // Load Reports on Page Load
+        window.onload = fetchReports;
+    </script>
+</body>
+</html>

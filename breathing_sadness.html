@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anxiety Waves: Inner Harmony</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background-color: #0f2027;
+            color: #ffffff;
+        }
+
+        #game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #start-screen, #end-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15,32,39,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+        }
+
+        #start-button, #restart-button {
+            background-color: #2c3e50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #start-button:hover, #restart-button:hover {
+            background-color: #34495e;
+        }
+
+        #status-bar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 10px;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-screen">
+        <h1>Sadness Removal: Inner Harmony</h1>
+        <p>Navigate through waves of Sadness</p>
+        <p>Use your mouse to find balance and create beauty</p>
+        <button id="start-button">Begin Your Journey</button>
+    </div>
+
+    <div id="end-screen" style="display:none;">
+        <h1>Transformation Complete</h1>
+        <p id="final-message"></p>
+        <button id="restart-button">Start Again</button>
+    </div>
+
+    <div id="status-bar" style="display:none;">
+        Harmony Level: <span id="harmony-meter">0</span> | 
+        Sadness Waves: <span id="wave-count">0</span>
+    </div>
+
+    <div id="game-overlay"></div>
+
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            parent: 'phaser-example',
+            backgroundColor: '#0f2027',
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+        let anxietyWaves = [];
+        let player, harmonyText, waveCountText;
+        let harmonyLevel = 0;
+        let mouseX = 0, mouseY = 0;
+        let gameStarted = false;
+        let gameEnded = false;
+
+        // Start screen setup
+        document.getElementById('start-button').addEventListener('click', () => {
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('status-bar').style.display = 'block';
+            gameStarted = true;
+        });
+
+        // End screen setup
+        document.getElementById('restart-button').addEventListener('click', () => {
+            location.reload();
+        });
+
+        function preload() {
+            // Preload wave textures and player texture
+            this.load.image('wave', 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/1f4a8.png');
+            this.load.image('harmony', 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/2728.png');
+        }
+
+        function create() {
+    const scene = this;
+    const centerX = this.cameras.main.centerX;
+    const centerY = this.cameras.main.centerY;
+
+    // Create background gradient using a simple rectangle with a fill color
+    const gradientTexture = this.add.graphics();
+    const gradientHeight = this.game.config.height;
+
+    // Draw the gradient
+    const gradientColor1 = 0x0f2027; // Dark color
+    const gradientColor2 = 0x2c5364; // Lighter color
+
+    gradientTexture.fillGradientStyle(
+        gradientColor1, gradientColor1,
+        gradientColor2, gradientColor2,
+        1
+    );
+    gradientTexture.fillRect(0, 0, this.game.config.width, gradientHeight);
+
+    // Create initial anxiety waves
+    for (let i = 0; i < 15; i++) {
+        createAnxietyWave(scene);
+    }
+
+    // Player (harmony core)
+    player = this.add.image(centerX, centerY, 'harmony')
+        .setScale(0.5)
+        .setAlpha(0.7);
+
+    // Status texts
+    harmonyText = document.getElementById('harmony-meter');
+    waveCountText = document.getElementById('wave-count');
+
+    // Mouse movement tracking
+    this.input.on('pointermove', (pointer) => {
+        mouseX = pointer.x;
+        mouseY = pointer.y;
+    });
+
+    // Particle emitter for harmonizing effect
+    const particleManager = this.add.particles('harmony');
+    this.harmonyEmitter = particleManager.createEmitter({
+        speed: { min: 20, max: 100 },
+        scale: { start: 0.1, end: 0 },
+        blendMode: 'ADD',
+        alpha: { start: 0.5, end: 0 },
+        lifespan: 1000
+    });
+}
+
+
+        function createAnxietyWave(scene) {
+            const x = Phaser.Math.Between(0, scene.game.config.width);
+            const y = Phaser.Math.Between(0, scene.game.config.height);
+            
+            const wave = scene.add.image(x, y, 'wave')
+                .setScale(Phaser.Math.FloatBetween(0.3, 1))
+                .setAlpha(Phaser.Math.FloatBetween(0.4, 0.8))
+                .setTint(0x2c3e50);  // Initial dark blue tint
+            
+            // Wave movement properties
+            wave.originalX = x;
+            wave.originalY = y;
+            wave.movementSpeed = Phaser.Math.FloatBetween(0.5, 2);
+            wave.oscillationAmplitude = Phaser.Math.FloatBetween(30, 100);
+            wave.oscillationSpeed = Phaser.Math.FloatBetween(0.01, 0.05);
+
+// Add to the anxiety waves list
+anxietyWaves.push(wave);
+}
+
+            
+
+function update(time, delta) {
+            if (!gameStarted || gameEnded) return;
+
+            // Update player (harmony core) position
+            player.x = mouseX;
+            player.y = mouseY;
+
+            // Update particle emitter to follow the player
+            game.scene.scenes[0].harmonyEmitter.setPosition(player.x, player.y);
+
+            // Update anxiety waves
+            anxietyWaves.forEach((wave) => {
+                wave.x = wave.originalX + Math.sin(time * wave.oscillationSpeed) * wave.oscillationAmplitude;
+                wave.y += wave.movementSpeed;
+
+                // Reset wave position when it goes off-screen
+                if (wave.y > config.height) {
+                    wave.y = -50; // Restart at the top
+                    wave.x = Phaser.Math.Between(0, config.width);
+                }
+
+                // Collision detection with the player
+                const distance = Phaser.Math.Distance.Between(player.x, player.y, wave.x, wave.y);
+                if (distance < 50) {
+                    handleWaveCollision(wave);
+                }
+            });
+        }
+
+        function handleWaveCollision(wave) {
+            // Increase harmony and remove the wave
+            harmonyLevel += 1;
+            wave.destroy();
+            anxietyWaves.splice(anxietyWaves.indexOf(wave), 1);
+
+            // Update status bar
+            harmonyText.textContent = harmonyLevel;
+            waveCountText.textContent = anxietyWaves.length;
+
+            // Check game end conditions
+            if (harmonyLevel >= 20) {
+                endGame(true);
+            } else if (anxietyWaves.length === 0) {
+                endGame(false);
+            }
+        }
+
+        function endGame(isSuccess) {
+            gameEnded = true;
+            document.getElementById('status-bar').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'block';
+
+            const finalMessage = isSuccess
+                ? "You found inner peace and harmony. Well done!"
+                : "The anxiety waves overwhelmed you. Try again!";
+
+            document.getElementById('final-message').textContent = finalMessage;
+        }
+
+        function endGame() {
+            gameEnded = true;
+            document.getElementById('status-bar').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'flex';
+            
+            const finalMessage = document.getElementById('final-message');
+            if (harmonyLevel > 80) {
+                finalMessage.textContent = `You've transformed your anxiety into pure harmony! (Harmony Level: ${Math.floor(harmonyLevel)})`;
+            } else if (harmonyLevel > 50) {
+                finalMessage.textContent = `You're making progress in managing your anxiety. (Harmony Level: ${Math.floor(harmonyLevel)})`;
+            } else {
+                finalMessage.textContent = `Your journey continues. Keep finding your inner peace. (Harmony Level: ${Math.floor(harmonyLevel)})`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spread the Joy!</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #ffeb3b;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            backgroundColor: '#ffeb3b',
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 0 },
+                    debug: false
+                }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        let player;
+        let smileys;
+        let scoreText;
+        let timerText;
+        let cursors;
+        let score = 0;
+        let timeLeft = 60;
+        let gameOver = false;
+        let game;
+        let gameOverPopup;
+
+        function preload() {
+            // Load a placeholder image for the player and smileys
+            this.load.image('smiley', 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/svg/emoji_u1f604.svg');
+            this.load.image('player', 'https://raw.githubusercontent.com/googlefonts/noto-emoji/main/svg/emoji_u2764.svg');
+        }
+
+        function create() {
+            // Create player with physics
+            player = this.physics.add.sprite(window.innerWidth / 2, window.innerHeight - 100, 'player')
+                .setCollideWorldBounds(true)
+                .setScale(0.3); // Increased player size
+
+            // Create smileys group with physics
+            smileys = this.physics.add.group({
+                key: 'smiley',
+                repeat: 9,
+                setXY: { x: 50, y: 50, stepX: window.innerWidth / 10 }
+            });
+
+            // Randomize smiley positions
+            smileys.children.entries.forEach((smiley) => {
+                smiley.setScale(0.3); // Increased smiley size
+                smiley.setRandomPosition(50, 50, window.innerWidth - 100, window.innerHeight / 2);
+                smiley.setVelocity(Phaser.Math.Between(-200, 200), Phaser.Math.Between(-200, 200));
+                smiley.setBounce(1);
+                smiley.setCollideWorldBounds(true);
+            });
+
+            // Collision detection
+            this.physics.add.overlap(player, smileys, collectSmiley, null, this);
+
+            // Create cursor keys
+            cursors = this.input.keyboard.createCursorKeys();
+
+            // Score text
+            scoreText = this.add.text(16, 16, 'Score: 0', { 
+                fontSize: '32px', 
+                fill: '#000',
+                fontStyle: 'bold'
+            });
+
+            // Timer text
+            timerText = this.add.text(window.innerWidth - 200, 16, 'Time: 60', { 
+                fontSize: '32px', 
+                fill: '#000',
+                fontStyle: 'bold'
+            });
+
+            // Timer event
+            this.time.addEvent({
+                delay: 1000,
+                callback: updateTimer,
+                callbackScope: this,
+                loop: true
+            });
+
+            // Add instructions
+            this.add.text(16, 50, 'Use Arrow Keys to Move', { 
+                fontSize: '24px', 
+                fill: '#000'
+            });
+        }
+
+        function update() {
+            if (gameOver) return;
+
+            // Player movement
+            player.setVelocity(0); // Reset velocity each frame
+
+            if (cursors.left.isDown) {
+                player.setVelocityX(-360);
+            } 
+            if (cursors.right.isDown) {
+                player.setVelocityX(360);
+            } 
+            if (cursors.up.isDown) {
+                player.setVelocityY(-360);
+            } 
+            if (cursors.down.isDown) {
+                player.setVelocityY(360);
+            }
+        }
+
+        function collectSmiley(player, smiley) {
+            if (gameOver) return;
+
+            // Remove smiley and increase score
+            smiley.disableBody(true, true);
+
+            score += 10;
+            scoreText.setText('Score: ' + score);
+
+            // Check if all smileys are collected
+            if (smileys.countActive(true) === 0) {
+                endGame(true);
+            }
+        }
+
+        function updateTimer() {
+            if (gameOver) return;
+
+            timeLeft--;
+            timerText.setText('Time: ' + timeLeft);
+
+            if (timeLeft <= 0) {
+                endGame(false);
+            }
+        }
+
+        function createGameOverPopup(won) {
+            // Dim background
+            const dimBackground = game.scene.scenes[0].add.rectangle(
+                window.innerWidth / 2, 
+                window.innerHeight / 2, 
+                window.innerWidth, 
+                window.innerHeight, 
+                0x000000, 
+                0.5
+            );
+
+            // Popup background
+            const popupBg = game.scene.scenes[0].add.rectangle(
+                window.innerWidth / 2, 
+                window.innerHeight / 2, 
+                window.innerWidth * 0.7, 
+                window.innerHeight * 0.5, 
+                0xffffff
+            );
+
+            // Game over text
+            const gameOverText = game.scene.scenes[0].add.text(
+                window.innerWidth / 2, 
+                window.innerHeight / 2 - 100, 
+                won ? 'YOU SPREAD THE JOY! 🎉' : 'TIME IS UP! TRY AGAIN! 😔', 
+                { 
+                    fontSize: '48px', 
+                    fill: '#000',
+                    fontStyle: 'bold',
+                    align: 'center'
+                }
+            ).setOrigin(0.5);
+
+            // Final score display
+            const finalScoreText = game.scene.scenes[0].add.text(
+                window.innerWidth / 2, 
+                window.innerHeight / 2, 
+                'Final Score: ' + score, 
+                { 
+                    fontSize: '32px', 
+                    fill: '#000'
+                }
+            ).setOrigin(0.5);
+
+            // Restart button
+            const restartButton = game.scene.scenes[0].add.text(
+                window.innerWidth / 2, 
+                window.innerHeight / 2 + 100, 
+                'Restart Game', 
+                { 
+                    fontSize: '24px', 
+                    fill: '#000',
+                    backgroundColor: '#4CAF50',
+                    padding: 10
+                }
+            ).setOrigin(0.5).setInteractive();
+
+            // Restart functionality
+            restartButton.on('pointerdown', () => {
+                game.destroy(true);
+                // Reinitialize the game
+                game = new Phaser.Game(config);
+                // Reset game variables
+                score = 0;
+                timeLeft = 60;
+                gameOver = false;
+            });
+
+            // Store popup elements
+            gameOverPopup = [dimBackground, popupBg, gameOverText, finalScoreText, restartButton];
+        }
+
+        function endGame(won) {
+            gameOver = true;
+            
+            // Stop player movement
+            player.setVelocity(0);
+
+            // Create game over popup
+            createGameOverPopup(won);
+        }
+
+        // Initialize the game
+        game = new Phaser.Game(config);
+
+        // Responsive game size
+        window.addEventListener('resize', function() {
+            if (game) {
+                game.scale.resize(window.innerWidth, window.innerHeight);
+            }
+        });
+    </script>
+</body>
+</html>

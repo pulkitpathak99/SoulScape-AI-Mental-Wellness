@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Wellness Chat</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        /* Make the activity report scrollable */
+        #activity-report {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            margin-top: 20px;
+            background: rgba(249, 249, 249, 0.9); /* Transparent background */
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            max-height: 80vh; /* Limit the height */
+            overflow-y: auto; /* Enable vertical scrolling */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        /* Close button styling */
+        #close-report-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #ff5c5c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #close-report-btn:hover {
+            background-color: #ff1a1a;
+        }
+
+        /* Make sure the chat-box has relative positioning to anchor the overlay */
+        .chat-box {
+            position: relative;
+            z-index: 1; /* Ensure chatbox is below the activity report */
+            padding: 20px;
+            height: 60vh; /* Set a height for the chatbox */
+            overflow-y: auto; /* Make the chatbox scrollable */
+            background-color: #fff;
+            border-radius: 8px;
+        }
+
+        /* Styling for the rest of the page */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        #fetch-report-btn {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <header>
+            <h1>SOULSCAPE</h1>
+        </header>
+        <div class="chat-box" id="chat-box">
+            <!-- Messages will be dynamically inserted here -->
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message here...">
+            <button id="send-btn">Send</button>
+        </div>
+        <button id="fetch-report-btn">View Activity Report</button>
+    </div>
+
+    <div id="activity-report">
+        <button id="close-report-btn">Close</button>
+        <h2>Activity Report</h2>
+        <ul id="activity-list"></ul>
+    </div>
+
+    <script src="/static/js/chat.js"></script>
+    <script>
+        // JavaScript for fetching and displaying activity report
+        document.getElementById('fetch-report-btn').addEventListener('click', () => {
+            fetch('/fetch_activities')
+                .then(response => response.json())
+                .then(data => {
+                    const reportDiv = document.getElementById('activity-report');
+                    const activityList = document.getElementById('activity-list');
+                    activityList.innerHTML = '';
+
+                    data.activities.forEach(activity => {
+                        const listItem = document.createElement('li');
+                        listItem.textContent = `Activity: ${activity.activity}, Mood: ${activity.mood}, Timestamp: ${activity.timestamp}`;
+                        activityList.appendChild(listItem);
+                    });
+
+                    reportDiv.style.display = 'block';
+                })
+                .catch(err => {
+                    console.error('Error fetching activities:', err);
+                });
+        });
+
+        // Close the activity report when the close button is clicked
+        document.getElementById('close-report-btn').addEventListener('click', () => {
+            const reportDiv = document.getElementById('activity-report');
+            reportDiv.style.display = 'none'; // Hide the activity report
+        });
+    </script>
+</body>
+</html>
