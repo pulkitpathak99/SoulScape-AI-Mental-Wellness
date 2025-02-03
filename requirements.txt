@@ -2,3 +2,6 @@ Flask==3.0.0
 requests==2.31.0
 firebase-admin==6.3.0
 gunicorn==21.2.0
+google-generativeai==0.3.2  # Latest stable version as of 2025
+textblob==0.15.3
+python-dotenv==1.0.0  # For environment variable management
