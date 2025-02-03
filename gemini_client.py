@@ -3,10 +3,11 @@
 import os
 import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types import content
-from config import Config
+# Replace the config import with:
+import os
 
-# Configure the API key
-genai.configure(api_key=Config.GEMINI_API_KEY)
+# Update the configuration line to:
+genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
 
 # Create and configure the model
 generation_config = {
