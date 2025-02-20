@@ -41,7 +41,7 @@ function displayActivitySuggestion(mood, activity, activityUrl) {
     const suggestion = document.createElement("div");
     suggestion.classList.add("activity-suggestion");
 
-    // Display the suggestion only if the mood is not neutral
+    // Display the suggestion only if the mood is not a neutral
     suggestion.innerHTML = `
         <p>We’ve detected you're feeling <strong>${mood}</strong>.</p>
         <p>Would you like to try the <strong>${activity}</strong> activity?</p>
